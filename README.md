@@ -4,11 +4,11 @@ MPTCP is an extension of TCP that allows the applications to  use multiple inter
 
  When DASH is used with MPTCP as transport protocol, the aggregated throughput and increased reliability due to the use of multiple interfaces for a streaming session improves QoE.There have been several studies to analyze the performance of DASH on MPTCP under the presence of shared bottleneck link, and varying network resources like MPTCP buffer sizes and path latencies. However, the real Internet scenario consists of several types of traffic with varying loads competing for resources.
 
-Problem Statement 
+Problem Statement:-
 
 To perform experimental evaluation of Multipath TCP for MPEG-DASH traffic under varying traffic loads and BBR as congestion control for background traffic.
 
-Objectives
+Objectives:-
 
 To gain an in-depth understanding of the working of Multipath TCP and its components.
 To gain an in-depth understanding of the working of MPEG-DASH (Dynamic Adaptive Streaming over HTTP).
