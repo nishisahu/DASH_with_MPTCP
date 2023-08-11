@@ -19,7 +19,6 @@
 ############################################################################
 
 #!/bin/sh
-cd /home/abhinaba/Major/MPTCP/server/
 
 # Create three hosts: h1, h2 and h3
 ip netns add h1
@@ -48,15 +47,16 @@ ip netns exec h2 sysctl -w net.mptcp.checksum_enabled=1
 ip netns exec s2 sysctl -w net.mptcp.stale_loss_cnt=10
 ip netns exec h2 sysctl -w net.mptcp.stale_loss_cnt=10
 
-#Enable the BBR congestion control at h1,s1,h3,s3
+# Configuring the MPTCP option C flag
+ip netns exec s2 sysctl -w net.mptcp.allow_join_initial_addr_port=1
+ip netns exec h2 sysctl -w net.mptcp.allow_join_initial_addr_port=1
+
+#configure congestion control
 ip netns exec h1 sysctl -w net.ipv4.tcp_congestion_control=bbr
 ip netns exec h3 sysctl -w net.ipv4.tcp_congestion_control=bbr
 ip netns exec s1 sysctl -w net.ipv4.tcp_congestion_control=bbr
 ip netns exec s3 sysctl -w net.ipv4.tcp_congestion_control=bbr
 
-# Configuring the MPTCP option C flag
-ip netns exec s2 sysctl -w net.mptcp.allow_join_initial_addr_port=1
-ip netns exec h2 sysctl -w net.mptcp.allow_join_initial_addr_port=1
 
 # Create the virtual ethernet (veth) pairs
 ip link add eh1 netns h1 type veth peer name er1a netns r1
@@ -220,33 +220,40 @@ ip -n s2 mptcp endpoint add 12.0.2.2 dev es2b signal
 ip -n h2 mptcp endpoint add 10.0.2.1 dev eh2b subflow fullmesh
 
 # Capture pacteks at '' interface ''
-# ip netns exec h1 tshark -i eh1 -w captures/_.pcap ---background
+# touch /home/nishi-sahu/eh1.pcap
+# sudo chmod 777 /home/nishi-sahu/eh1.pcap
+ip netns exec h1 tshark -i eh1 -w /tmp/eh1.pcap ---background
 
+ip netns exec h2 tshark -i eh2a -w /tmp/eh2a.pcap ---background
+
+#sleep 5000
 # Create servers on 's1'
-ip netns exec s1 python3.11 -m http.server --protocol HTTP/1.1 ---background
-ip netns exec s1 iperf -s -p 5061 ---background
-cd /home/abhinaba/Utilitis/sipp-3.6.0/
-ip netns exec s1 ./sipp -sf receiver1.xml -p 5001 > /dev/null ---background
+cd /home/nishi-sahu/BigBuckBunny
+ip netns exec s1 python3.11 -m http.server --protocol HTTP/1.1 > /dev/null ---background
+ip netns exec s1 iperf -s -p 5061 > /dev/null ---background
+cd /home/nishi-sahu/sipp/
+ip netns exec s1 ./sipp -sf receiver1.xml -p 5001 > /dev/null---background
 
 # Create servers on 's3'
-cd /home/abhinaba/Major/MPTCP/server/
-ip netns exec s3 python3.11 -m http.server --protocol HTTP/1.1---background
-ip netns exec s3 iperf -s -p 5062 ---background
-cd /home/abhinaba/Utilitis/sipp-3.6.0/
-ip netns exec s3 ./sipp -sf receiver2.xml -p 5002 > /dev/null ---background
+cd /home/nishi-sahu/BigBuckBunny
+ip netns exec s3 python3.11 -m http.server --protocol HTTP/1.1 > /dev/null ---background
+ip netns exec s3 iperf -s -p 5062 > /dev/null ---background
+cd /home/nishi-sahu/sipp/
+ip netns exec s3 ./sipp -sf receiver2.xml -p 5002 > /dev/null---background
 
 # Create servers on 's2'
-cd /home/abhinaba/Major/MPTCP/server/
-mptcpize run ip netns exec s2 python3.11 -m http.server --protocol HTTP/1.1 ---background
+cd /home/nishi-sahu/BigBuckBunny
+mptcpize run ip netns exec s2 python3.11 -m http.server --protocol HTTP/1.1 > /dev/null ---background
+
 
 # Change Directory to client
-cd /home/abhinaba/Major/MPTCP/client
+cd /home/nishi-sahu
 
 # Run client tasks on 'h1'
 # WEB Traffic
 ip netns exec h1 httperf --hog --server 12.0.0.2 --port 8000 --wsess=600,15,2 --rate 1 --http-version=1.1 ---set-time 2 
 # VoIP Traffic
-cd /home/abhinaba/Utilitis/sipp-3.6.0/
+cd /home/nishi-sahu/sipp/
 ip netns exec h1 ./sipp 12.0.0.2:5001 -sf sender1.xml -r 5 > /dev/null ---background
 # FTP Traffic
 ip netns exec h1 iperf -c 12.0.0.2 -p 5061 -b 1.2M -t 0 ---background
@@ -285,5 +292,15 @@ ip netns exec h3 iperf -c 12.0.3.2 -p 5062 -b 1.2M -t 0 ---background
 # ip netns exec s3 iperf -c 10.0.3.1 -p 5202 -b 1.2M -t 0 ---background
 
 # Stream DASH using MPTCP from 'h2'
-cd /home/abhinaba/Major/MPTCP/client
-mptcpize run ip netns exec h2 gpac -i http://12.0.1.2:8000/dash/BigBuckBunny/15sec/simple_manifest.mpd:gpac:algo=grate:start_with=max_q aout vout:buffer=1000:mbuffer=10000 -logs=all@info -log-file=gpac_log.log ---set-time-wait 5
+cd /home/nishi-sahu/Practical_Training
+
+ip netns exec h2 gpac -i http://12.0.1.2:8000/10sec/BigBuckBunny_10s_simple_2014_05_09.mpd:gpac:algo=grate:start_with=max_q vout:buffer=1000:mbuffer=10000 -logs=all@info -log-file=gpac_log.log ---set-time-wait 5
+
+#mptcpize run ip netns exec h2 env PULSE_SERVER=/run/user/1000/pulse/native PULSE_COOKIE=/run/user/1000/pulse/cookie bash -c "gpac -i http://12.0.1.2:8000/1sec/BigBuckBunny_1s_simple_2014_05_09.mpd:gpac:algo=grate:start_with=min_q vout:buffer=1000:mbuffer=10000 -logs=all@info -log-file=gpac_log.log" ---set-time-wait 5
+
+#mptcpize run ip netns exec h2 gpac -i http://12.0.1.2:8000/2sec/BigBuckBunny_2s_simple_2014_05_09.mpd:gpac:algo=grate:start_with=max_q vout:buffer=1000:mbuffer=10000 -logs=all@info -log-file=gpac_log.log ---set-time-wait 5
+
+
+#mptcpize run ip netns exec h2 env PULSE_SERVER=/run/user/1000/pulse/native PULSE_COOKIE=/run/user/1000/pulse/cookie bash -c "gpac -i http://12.0.1.2:8000/encode/manifest.mpd:gpac:algo=grate:start_with=min_q aout vout:buffer=1000:mbuffer=10000 -logs=all@info -log-file=gpac_log.log" ---set-time-wait 
+
+#mptcpize run ip netns exec h2 gpac -i http://12.0.1.2:8000/1sec/BigBuckBunny_1s_simple_2014_05_09.mpd:gpac:algo=grate:start_with=max_q vout:buffer=1000:mbuffer=10000 -logs=all@info -log-file=gpac_log.log ---set-time-wait 5
