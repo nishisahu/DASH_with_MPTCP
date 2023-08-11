@@ -1,1 +1,2 @@
 # DASH_with_MPTCP
+MPTCP is an extension of TCP that allows the applications to  use multiple interfaces over the same TCP connection, enabling them to utilize the aggregated bandwidth and provide resilience to network failure. These characteristics of MPTCP make it well-suited for streaming traffic. Dynamic Adaptive Streaming over HTTP (DASH), a streaming protocol dominating the Internet, ensures Quality of Experience (QoE) to content consumers by adapting the playback bitrate to match the available throughput.
