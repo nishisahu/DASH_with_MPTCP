@@ -11,9 +11,14 @@ To perform experimental evaluation of Multipath TCP for MPEG-DASH traffic under 
 Objectives:-
 
 To gain an in-depth understanding of the working of Multipath TCP and its components.
+
 To gain an in-depth understanding of the working of MPEG-DASH (Dynamic Adaptive Streaming over HTTP).
+
 To emulate Multipath TCP using Linux network namespaces and utilities.
+
 To check the compliance of Linux Upstream implementation of MPTCP with RFC 8684.
+
 To implement different scenarios with varying loads and test the performance of DASH on MPTCP.
+
 To gain an in-depth understanding of the behavior of BBR congestion control in background traffic.
 
